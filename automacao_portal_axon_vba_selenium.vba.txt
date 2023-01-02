@@ -1,0 +1,345 @@
+'Option Explicit
+
+Private cd As Selenium.ChromeDriver
+
+Sub LoginAxon()
+    
+    Set cd = New Selenium.ChromeDriver
+    
+    'formatação da planilha
+    Call alinha_esquerda
+    cd.Wait 1000
+    Call adiciona_coluna_tipo_e_se_impar
+    cd.Wait 1000
+    Call extrai_caracter_equipamento
+    cd.Wait 1000
+    Call extrai_porta_equipamento
+    cd.Wait 1000
+    Call verifica_tipo_equipamento
+    cd.Wait 1000
+    Call verifica_se_impar
+    cd.Wait 1000
+    Call pinta_equi_impares
+    cd.Wait 1000
+    
+    'Início das atividades principais
+    Call inicia_axon
+    Call loga_usuario
+    
+    Call busca_painel_opcoes_pesquisa
+    Call loop_pag_equi_axon
+    
+End Sub
+
+Sub inicia_axon()
+    Set cd = New Selenium.ChromeDriver
+    
+    cd.Start
+    cd.Get "http://10.125.18.66:8080/Axon4/"
+    cd.Window.Maximize
+
+End Sub
+
+Sub loga_usuario()
+    cd.Wait 1000
+    cd.FindElementById("login:username").SendKeys "lucas.ferreira"
+    cd.FindElementById("login:password").SendKeys "12345678"
+    cd.FindElementByName("login:j_id114").Click
+End Sub
+
+Sub busca_painel_opcoes_pesquisa()
+    cd.Wait 1000
+    cd.Get "http://10.125.18.66:8080/Axon4/event/controlPanelAction.seam"
+End Sub
+
+Sub define_pesquisa_por_unidade_consumidora()
+    cd.Wait 1000
+    Set webPesquisa = cd.FindElementById("form:searchStrategySelect")
+    cd.Wait 1000
+    webPesquisa.SendKeys "u"
+End Sub
+
+Sub pesquisa_comunicao_se_disponivel()
+    Dim webComunicacao As Selenium.SelectElement
+    
+    cd.Wait 1000
+    Set webComunicacao = cd.FindElementById("form:communication").AsSelect
+    cd.Wait 1000
+    webComunicacao.SelectByText "Disponível"
+
+End Sub
+
+Sub clique_botao_pesquisar()
+    Dim webPesquisar As Selenium.WebElement
+    
+    On Error Resume Next
+    cd.Wait 1000
+    Set webPesquisar = cd.FindElementById("form:j_id139")
+    cd.Wait 1000
+    webPesquisar.Click
+
+End Sub
+
+Sub importa_tabela_to_excel()
+    Dim webTable As Selenium.WebElement
+    
+    cd.Wait 1000
+    Set webTable = cd.FindElementById("form:j_id238")
+    cd.Wait 1000
+    webTable.Click
+
+End Sub
+
+Sub largura_padrao()
+ Columns("a:a").ColumnWidth = 8.43
+ Columns("a:a").RowHeight = 12.75
+End Sub
+
+
+Sub alinha_esquerda()
+    With Planilha2.Range("A:A")
+        With Planilha2.Range("F:F")
+            With Planilha2.Range("M:M")
+                With Planilha2.Range("O:O")
+                    .HorizontalAlignment = xlLeft
+                    .AddIndent = True
+                End With
+            End With
+        End With
+    End With
+    
+End Sub
+
+
+Sub apaga_ultima_linha()
+
+    ultima_linha = Planilha2.UsedRange.Rows.Count
+    
+    linha = ultima_linha
+    Planilha2.Rows(linha).Delete
+    
+    Debug.Print ultima_linha
+    
+End Sub
+
+Sub adiciona_coluna_tipo_e_se_impar()
+    
+    Planilha2.Range("n1").Value = "Extrai Caracter"
+    Planilha2.Range("o1").Value = "Extrai Porta"
+    Planilha2.Range("p1").Value = "Tipo Equipamento"
+    Planilha2.Range("q1").Value = "Verifica se Impar"
+    
+End Sub
+
+
+
+Sub extrai_caracter_equipamento()
+    
+    ultima_linha = Planilha2.Cells(Rows.Count, "A").End(xlUp).Row
+    
+    For linha_principal = 2 To ultima_linha
+        Planilha2.Cells(linha_principal, "N") = Mid(Cells(linha_principal, "A"), 3, 2)
+    Next
+    
+    Call alinha_esquerda
+    
+End Sub
+
+Sub extrai_porta_equipamento()
+    
+    ultima_linha = Planilha2.Cells(Rows.Count, "A").End(xlUp).Row
+    
+    For linha_principal = 2 To ultima_linha
+        
+        Planilha2.Cells(linha_principal, "O") = Mid(Cells(linha_principal, "F"), 1, 5)
+    Next
+    
+    Call alinha_esquerda
+
+End Sub
+
+Sub verifica_tipo_equipamento()
+    
+    ultima_linha = Planilha2.Cells(Rows.Count, "A").End(xlUp).Row
+    
+    For linha_principal = 2 To ultima_linha
+        If Planilha2.Cells(linha_principal, "N") = "10" Then
+            Planilha2.Cells(linha_principal, "P").Value = "REL"
+            Else
+            If Planilha2.Cells(linha_principal, "N") = "16" Then
+                Planilha2.Cells(linha_principal, "P").Value = "CTL"
+                Else
+                    Planilha2.Cells(linha_principal, "P").Value = "SUB"
+            End If
+        End If
+    Next
+
+End Sub
+
+Sub verifica_se_impar()
+    
+    ultima_linha = Planilha2.Cells(Rows.Count, "A").End(xlUp).Row
+    
+    For linha_principal = 2 To ultima_linha
+        If IsNumeric(Planilha2.Cells(linha_principal, "O").Value) Then
+            numero = Planilha2.Cells(linha_principal, "O").Value
+            If numero Mod 2 = 0 Then
+            Planilha2.Cells(linha_principal, "Q").Value = "PAR"
+                Else
+                    Planilha2.Cells(linha_principal, "Q").Value = "IMPAR"
+            End If
+            Else
+            Planilha2.Cells(linha_principal, "Q").Value = "NULL"
+        End If
+    Next
+End Sub
+
+
+Sub clica_imagem_axon_impar()
+    Dim webImagem As Selenium.WebElement
+    Dim check_object As By
+    
+    cd.Wait 2000
+    On Error Resume Next
+    If cd.FindElementById("form:statusTable:0:img-shell").IsPresent Then
+        
+        Set webImagem = cd.FindElementById("form:statusTable:0:img-shell", 3)
+        cd.Wait 1000
+        webImagem.Click
+    End If
+
+End Sub
+
+Sub preenche_comando_reset_axon()
+    Dim webInputReset As Selenium.WebElement
+    
+    cd.Wait 1000
+    On Error Resume Next
+    Set webInputReset = cd.FindElementById("j_id245:comando")
+    cd.Wait 1000
+    If webInputReset.IsPresent Then
+        webInputReset.SendKeys "ggo+RESET_MODULE"
+    End If
+    cd.Wait 1000
+    
+End Sub
+
+Sub envia_comando_reset()
+    Dim webEnviaReset As Selenium.WebElement
+    
+    On Error Resume Next
+    cd.Wait 1000
+    Set webEnviaReset = cd.FindElementById("j_id245:sendCommand")
+    cd.Wait 1000
+    webEnviaReset.Click
+    cd.Wait 1000
+    
+End Sub
+
+Sub pinta_equi_impares()
+    ultima_linha = Planilha2.Cells(Rows.Count, "A").End(xlUp).Row
+    
+    For linha = 2 To ultima_linha
+        If Planilha2.Cells(linha, "Q") = "IMPAR" Then
+            If Planilha2.Cells(linha, "P") = "REL" Or Planilha2.Cells(linha, "P") = "CTL" Then
+                Planilha2.Cells(linha, "S").Interior.Color = vbRed
+            End If
+        End If
+    Next
+
+End Sub
+
+
+Sub loop_pag_equi_axon()
+    
+    On Error Resume Next
+    ultima_linha = Planilha2.Cells(Rows.Count, "A").End(xlUp).Row
+    For linha = 2 To ultima_linha
+        If Planilha2.Cells(linha, "S").Interior.Color = vbRed Then
+            Call define_pesquisa_por_unidade_consumidora
+            cd.Wait 1000
+            'Call pesquisa_comunicao_se_disponivel
+            'cd.Wait 1000
+            Set webInput = cd.FindElementById("form:searchMCIUCkey")
+            webInput.SendKeys Planilha2.Cells(linha, "A")
+            Planilha3.Cells(linha, "A") = Planilha2.Cells(linha, "A")
+            Planilha3.Cells(linha, "B") = Now
+            cd.Wait 1000
+            Call clique_botao_pesquisar
+            cd.Wait 1000
+            Call clica_imagem_axon_impar
+            Call preenche_comando_reset_axon
+            cd.Wait 1000
+            Call envia_comando_reset
+            cd.Wait 30000
+            Planilha3.Cells(linha, "A") = Planilha2.Cells(linha, "A")
+            Planilha3.Cells(linha, "B") = Now
+            Planilha2.Rows(linha).Delete
+            Call busca_painel_opcoes_pesquisa
+            
+        End If
+    Next
+
+End Sub
+
+
+Sub apaga_celula_pintada()
+
+    Columns("s").Delete
+
+End Sub
+
+
+Sub proxima_pagina()
+    Dim webProximo As Selenium.WebElement
+    
+    Set webProximo = cd.FindElementByXPath("//*[@id='form:statusTable:statusDS_table']/tbody/tr/td[15]")
+    If webProximo.IsPresent Then
+        webProximo.Click
+        Else
+        MsgBox "Fim da Lista"
+    End If
+End Sub
+
+Sub apaga_planilha()
+    
+    Sheets("Cole_Aqui_A_Base_Axon").Cells.Clear
+    
+End Sub
+
+Sub apaga_planilha3_log()
+    Sheets("log_equipamentos").Cells.Clear
+End Sub
+
+
+Sub download_planilha_axon()
+    Call inicia_axon
+    Call loga_usuario
+    
+    Call busca_painel_opcoes_pesquisa
+    Call define_pesquisa_por_unidade_consumidora
+    'Call pesquisa_comunicao_se_disponivel
+    cd.Wait 1000
+    Call clique_botao_pesquisar
+    Call clica_exportar_xls_axon
+
+End Sub
+
+Sub clica_exportar_xls_axon()
+    Dim webExportXls As Selenium.WebElement
+    
+    Set webExportXls = cd.FindElementById("form:j_id238")
+    webExportXls.Click
+End Sub
+
+Sub apaga_caracter_esquerda()
+
+ultima_linha = Planilha2.Cells(Rows.Count, "A").End(xlUp).Row
+
+For linha = 2 To ultima_linha
+    Planilha2.Cells(linha, "A").Value = VBA.LTrim(Planilha2.Cells(linha, "A"))
+Next
+    
+
+End Sub
+
